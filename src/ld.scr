@@ -1,0 +1,77 @@
+OUTPUT_FORMAT("elf32-avr")
+OUTPUT_ARCH(avr6)
+ENTRY("start")
+
+MEMORY
+{
+	romall(rx)	    : o = 0x000000, l = 256K
+	vectors(r)	    : o = 0x000000, l = 0x000100
+	rom(rx)		    : o = 0x000100, l = 0x03e000 - 0x000100
+	bootloader(r)	: o = 0x03e000, l = 256K - 0x03e000
+
+	ramall(rwx)	    : o = 0x800200, l = 0x00fe00
+	registers(rw)	: o = 0x800200, l = 0x000100
+
+	softvec(rw)	    : o = 0x800300, l = 0x800340 - 0x800300
+	ram(rwx)	    : o = 0x800340, l = 0x801a00 - 0x800340
+	userstack(rw)	: o = 0x801a00, l = 0x000000
+	bootstack(rw)	: o = 0x8021ff, l = 0x000000
+	intrstack(rw)	: o = 0x8021ff, l = 0x000000
+}
+
+SECTIONS
+{
+	.vectors : {
+		 build/src/vector.s.o(.text)
+	} > vectors
+
+	.text : {
+	      	 _text_start = . ;
+		 *(.text)
+		 _etext = . ;
+	} > rom
+
+	.softvec : {
+		 _softvec = .;
+	} > softvec
+
+	.rodata : {
+		 _rodata_start = . ;
+		 *(.strings)
+		 *(.rodata)
+		 *(.rodata.*)
+		 _erodata = . ;
+	} > ram AT> rom
+
+	.data : {
+		 _data_start = . ;
+		 *(.data)
+		 _edata = . ;
+	} > ram AT> rom
+
+	.bss : {
+		 _bss_start = . ;
+		 *(.bss)
+		 *(COMMON)
+		 _ebss = . ;
+	} > ram AT> rom
+
+	. = ALIGN(4);
+	_end = . ;
+
+	.freearea : {
+		 _freearea = .;
+	} > ram
+
+	.userstack : {
+		 _userstack = .;
+	} > userstack
+
+	.bootstack : {
+		 _bootstack = .;
+	} > bootstack
+
+	.intrstack : {
+		 _intrstack = .;
+	} > intrstack
+}
