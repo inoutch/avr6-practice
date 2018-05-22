@@ -51,15 +51,15 @@
 ; 	sts	0xc6,	r24	; UDR0レジスタ, r24に第一引数が入っている
 ;	ret
 
-	.section .text
-	.global	serial_setup
-	.type	serial_setup,@function
-serial_setup:
-	in	    r16,	0x35	; MCUCRレジスタ
-	mov	    r17,	r16
-	ori	    r16,	(1 << 0) ; IVCEビット
-	andi	r17,	0b11111101	; IVSELビットを0に．若くは0を代入．
-	out	    0x35, 	r17
+	;.section .text
+	;.global	serial_setup
+	;.type	serial_setup,@function
+;serial_setup:
+	;in	        r16,	0x35	; MCUCRレジスタ
+	;mov	    r17,	r16
+	;ori	    r16,	(1 << 0) ; IVCEビット
+	;andi	    r17,	0b11111101	; IVSELビットを0に．若くは0を代入．
+	;out	    0x35, 	r17
 
 	;ldi	    r16,	0b00000000
 	;sts	    0xc1,	r16	; USART_UCSR0Bレジスタ
@@ -78,13 +78,13 @@ serial_setup:
 	;ori	    r16,	(1 << 2) ; UCSZ01ビット
 	;sts	    0xc2,	r16	; USART_UCSR0Cレジスタ
 
-	in	    r16,	0x0a	; DDRDレジスタ
-	andi	r16,	0b11111110
-	out	    0x0a,	r16
-	in	    r16,	0x0b	; PORTDレジスタ
-	ori	    r16,	0b00000001
-	out	    0x0b,	r16
-	ret
+	;in	    r16,	0x0a	; DDRDレジスタ
+	;andi	r16,	0b11111110
+	;out	    0x0a,	r16
+	;in	    r16,	0x0b	; PORTDレジスタ
+	;ori	    r16,	0b00000001
+	;out	    0x0b,	r16
+	;ret
 
 	.globl	get_register
 	.type	get_register,@function

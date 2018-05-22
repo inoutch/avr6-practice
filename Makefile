@@ -10,7 +10,7 @@ INC_FLAGS 	:= $(addprefix -I,$(INC_DIRS))
 
 MMCU 		= avr6
 CONF 		= $$ARDUINO_PATH/hardware/tools/avr/etc/avrdude.conf
-DEV 		= /dev/cu.usbmodem1421
+DEV 		= /dev/cu.usbmodem14611
 
 AS 	= avr-as
 LD	= avr-ld
@@ -38,7 +38,7 @@ $(BUILD_DIR)/$(TARGET): $(OBJS)
 # assembly
 $(BUILD_DIR)/%.s.o: %.s
 	$(MKDIR_P) $(dir $@)
-	$(AS) $(ASFLAGS) -c $< -o $@
+	$(CC) $(ASFLAGS) -c $< -o $@
 
 # c source
 $(BUILD_DIR)/%.c.o: %.c

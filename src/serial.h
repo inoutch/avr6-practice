@@ -14,6 +14,7 @@
 #define PORTD   _SFR_IO8(0x0B)
 
 #define EIND    _SFR_IO8(0x3C)
+
 #define TCCR0A  _SFR_IO8(0x24)
 #define TCCR0B  _SFR_IO8(0x25)
 #define TIMSK0  _SFR_MEM8(0x6E)
@@ -22,7 +23,17 @@
 #define OCR0B   _SFR_IO8(0X28)
 #define TIFR0   _SFR_IO8(0x15)
 
-int serial_setup();
+#define TCCR1A  _SFR_MEM8(0x80)
+#define TCCR1B  _SFR_MEM8(0x81)
+#define ICR1    _SFR_MEM16(0x86)
+#define ICR1L   _SFR_MEM8(0x86)
+#define ICR1H   _SFR_MEM8(0x87)
+#define OCR1A   _SFR_MEM16(0x88)
+#define OCR1AL  _SFR_MEM8(0x88)
+#define OCR1AH  _SFR_MEM8(0x89)
+#define TIMSK1  _SFR_MEM8(0x6F)
+
+void serial_setup();
 
 void serial_init(unsigned int index);
 

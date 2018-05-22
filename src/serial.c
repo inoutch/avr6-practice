@@ -4,6 +4,7 @@
 #define RXEN (1 << 4)
 #define UCSZ0 (1 << 1)
 #define UCSZ1 (1 << 2)
+#define IVCE (1 << 0)
 // UDR
 #define TX (1 << 5)
 #define RX (1 << 7)
@@ -23,6 +24,12 @@ struct {
 } regs[3] = {{(volatile struct avr_sci *) 0xc0},
              {(volatile struct avr_sci *) 0xc8},
              {(volatile struct avr_sci *) 0xd0}};
+
+void serial_setup() {
+    MCUCR |= 0b11111101;
+    DDRD |= 0b11111110;
+    PORTD |= 0b00000001;
+}
 
 void serial_init(unsigned int index) {
     volatile struct avr_sci *sci = regs[index].sci;
