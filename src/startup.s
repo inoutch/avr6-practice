@@ -7,7 +7,6 @@ start:
 	out	0x3d, r28
 	out	0x3e, r29
 
-
 data_copy_set:
 	eor	r1, r1
 
@@ -32,7 +31,7 @@ data_copy:
 	cpc	r1, r21
 	brge	bss_clear_set
 	lpm	r24, Z+
-	;;  	#ifdef SIMULATOR
+	;;  #ifdef SIMULATOR
 	;;  	ld	r24, X
 	;; 	#endif
 	st	X+, r24
@@ -67,4 +66,3 @@ bss_clear:
 call_main:
     out     0x3C, 0x00  ; EIND を初期化
 	call	main
-

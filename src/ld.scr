@@ -10,12 +10,12 @@ MEMORY
 	bootloader(r)	: o = 0x03e000, l = 256K - 0x03e000
 
 	ramall(rwx)	    : o = 0x800200, l = 0x00fe00
-	registers(rw)	: o = 0x800200, l = 0x000100
 
+	registers(rw)	: o = 0x800200, l = 0x000100
 	softvec(rw)	    : o = 0x800300, l = 0x800340 - 0x800300
-	ram(rwx)	    : o = 0x800340, l = 0x801a00 - 0x800340
+	ram(rwx)	    : o = 0x800400, l = 0x801a00 - 0x800400
 	userstack(rw)	: o = 0x801a00, l = 0x000000
-	bootstack(rw)	: o = 0x8021ff, l = 0x000000
+	bootstack(rw)	: o = 0x8020ff, l = 0x000000
 	intrstack(rw)	: o = 0x8021ff, l = 0x000000
 }
 

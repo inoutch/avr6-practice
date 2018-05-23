@@ -16,11 +16,8 @@ char getc();
 
 int send(char *c, unsigned int size);
 
-// memory
-void memset(void *data, int value, uint32_t size);
+void *memset (void *b, int c, long len);
 
-void *alloc(uint32_t size);
-
-void free(void *ptr);
+char *strcpy(char *dst, const char *src);
 
 #endif

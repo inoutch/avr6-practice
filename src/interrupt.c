@@ -13,14 +13,9 @@ int softvec_setintr(softvec_type_t type, softvec_handler_t handler) {
     return 0;
 }
 
-void nnn() {
-    //putc('c');
-}
-
 void interrupt(softvec_type_t type, uint16_t sp) {
-    //softvec_handler_t handler = SOFTVECS[type];
-    //if (handler) {
-    //hello(type, sp);
-    //handler(type, sp);
-    //}
+    softvec_handler_t handler = SOFTVECS[type];
+    if (handler) {
+        handler(type, sp);
+    }
 }

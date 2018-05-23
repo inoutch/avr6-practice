@@ -61,37 +61,18 @@ int send(char c[], unsigned int size) {
     return 0;
 }
 
-void init_pool(mem_pool *p) {
-    int i;
-    mem_block *mp;
-    mem_block **mpp;
-    extern char _freearea;
-    static char *area = &_freearea;
+void *memset(void *b, int c, long len) {
+    char *p;
+    for (p = b; len > 0; len--)
+        *(p++) = c;
+    return b;
+}
 
-    mp = (mem_block *) area;
-    mpp = &p->free;
-    for (i = 0; i < p->num; i++) {
-        *mpp = mp;
-        memset(mp, 0, sizeof(*mp));
-        mp->size = p->size;
-        mpp = &(mp->next);
-        mp = (mem_block *) ((char *) mp + p->size);
-        area += p->size;
+char *strcpy(char *dst, const char *src) {
+    char *d = dst;
+    for (;; dst++, src++) {
+        *dst = *src;
+        if (!*src) break;
     }
-    return 0;
-}
-
-void memset(void *data, int value, uint32_t size) {
-    char *p = data;
-    for (; size > 0; size--)
-        *(p++) = value;
-}
-
-void *alloc(uint32_t size) {
-    int i;
-
-}
-
-void free(void *ptr) {
-
+    return d;
 }

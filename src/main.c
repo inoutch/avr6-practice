@@ -1,11 +1,7 @@
 #include "serial.h"
-#include "lib.h"
-#include "time.h"
-#include "thread.h"
 #include "xbee.h"
-#include "interrupt.h"
-
-int global_time = 0;
+#include "os.h"
+#include "lib.h"
 
 void send_hello() {
     uint8_t payload[] = "begin";
@@ -45,36 +41,20 @@ void xbee_test() {
     }
 }
 
-void execution(int argc, char *argv[]) {
-
-}
-
-void intr(softvec_type_t type, uint16_t sp) {
-//    if (global_time == 20000)
-//        global_time = 0;
-//    else
-//        global_time++;
+void execution(int args, char *argv[]) {
 }
 
 int main(void) {
-    INTR_DISABLE;
-    // initialize
-    init();
-    softvec_init();
+    os_init();
 
-    timer_init();
-    timer_interrupt_init();
+    char *str = malloc(sizeof(char) * 20);
+    strcpy(str, "hogehoge\n");
+    puts(str);
+    free(str);
 
-    softvec_setintr(SOFTVEC_TYPE_TIMEINT, intr);
-    INTR_ENABLE;
+    thread_run(execution, 0, 64, 0, NULL);
 
-//    thread_ptr thread;
-//    thread_create(&thread, execution, 0, NULL);
-//    puti(123);
-    while (1) {
-        puthex((global_time & 0xff00) >> 8);
-        puthex((global_time & 0x00ff) >> 0);
-        putc('\n');
-        delay_ms(10000);
-    }
+    puts("done.\n");
+    while (1);
+    // exit(0);
 }
