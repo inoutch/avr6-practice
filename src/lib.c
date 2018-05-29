@@ -39,14 +39,25 @@ int puts(char *str) {
     return 0;
 }
 
+int putp(void *ptr) {
+    puts("0x");
+    puthex((char) ((uint16_t) ptr >> 8) & 0xff);
+    puthex((char) ((uint16_t) ptr >> 0) & 0xff);
+}
+
 int puthex(char c) {
     char a16[] = "0123456789abcdef";
     char r = c & 0x0f;
     char l = (c >> 4) & 0x0f;
     putc(a16[l]);
     putc(a16[r]);
-    putc(' ');
     return 0;
+}
+
+int puti(int i) {
+    puts("0x");
+    puthex((char) ((uint16_t) i >> 8) & 0xff);
+    puthex((char) ((uint16_t) i >> 0) & 0xff);
 }
 
 char getc() {

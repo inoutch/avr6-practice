@@ -12,6 +12,10 @@ int puts(char *str);
 
 int puthex(char c);
 
+int putp(void *ptr);
+
+int puti(int i);
+
 char getc();
 
 int send(char *c, unsigned int size);

@@ -2,6 +2,8 @@
 #include "xbee.h"
 #include "os.h"
 #include "lib.h"
+#include "time.h"
+
 
 void send_hello() {
     uint8_t payload[] = "begin";
@@ -41,22 +43,28 @@ void xbee_test() {
     }
 }
 
-void execution(int args, char *argv[]) {
-    puts("hello!");
-    while (1);
+void execution1(int args, char *argv[]) {
+    puts("1111111a");
+}
+
+void execution2(int args, char *argv[]) {
+    puts("2222222b");
+}
+
+void execution3(int args, char *argv[]) {
+    puts("33333333c");
 }
 
 int main(void) {
     os_init();
 
-//    char *str = malloc(sizeof(char) * 20);
-//    strcpy(str, "hogehoge\n");
-//    puts(str);
-//    free(str);
+    thread_run(execution1, 128, 0, NULL);
+    thread_run(execution2, 128, 0, NULL);
+    thread_run(execution3, 128, 0, NULL);
+    puts("4444444d");
 
-    thread_run(execution, 64, 0, NULL);
-
-    puts("done.\n");
-    while (1);
+    while (1) {
+        delay_ms(1000);
+    }
     // exit(0);
 }

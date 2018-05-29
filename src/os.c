@@ -32,9 +32,15 @@ static struct {
     context_t *tail;
 } ready_context_queue;
 
+
 void kernel_queue_context();
 
 void dispatch(context_t *context);
+
+context_t *kernel_schedule();
+
+void kernel_thread_resume(context_t *context);
+
 
 // user
 // memory
@@ -50,6 +56,7 @@ void free(void *ptr) {
     params.un.free.ptr = ptr;
     syscall(SYSCALL_TYPE_FREE, &params);
 }
+
 
 // thread
 void thread_init() {
@@ -79,6 +86,7 @@ void sleep(uint16_t milliseconds) {
     syscall(SYSCALL_TYPE_SLEEP, &params);
 }
 
+
 // kernel
 // thread
 void kernel_queue_context(context_t *context) {
@@ -93,16 +101,43 @@ void kernel_queue_context(context_t *context) {
     ready_context_queue.tail = context;
 }
 
-void kernel_thread_end() {
+void kernel_remove_context(context_t *context) {
+    context_t *c = ready_context_queue.head;
+    if (c == context) {
+        if (c->next == NULL) {
+            kernel_shutdown();// last thread ended
+        }
+        ready_context_queue.head = c->next;
+        memset(context, 0, sizeof(context));
+        return;
+    }
+    while (c) {
+        if (c->next == current) {
+            c->next = current->next;
+            if (c->next == NULL) {
+                ready_context_queue.tail = c;
+            }
+            break;
+        }
+        c = c->next;
+    }
+    memset(context, 0, sizeof(context));
+}
 
+// remove current context
+void kernel_thread_end() {
+    INTR_DISABLE;
+    context_t *next = kernel_schedule();
+    kernel_remove_context(current);
+    kernel_thread_resume(next);
 }
 
 void kernel_thread_init(context_t *context) {
     context->init.func(context->init.argc, context->init.argv);
-    kernel_thread_end();
+    //kernel_thread_end(); maybe it is not necessary because the returning address of kernel_thread_end stacks.
 }
 
-thread_id_t kernel_thread_run(thread_func func, int argc, char *argv, int stacksize) {
+thread_id_t kernel_thread_run(thread_func func, int stacksize, int argc, char *argv) {
     int i;
     context_t *context_ptr;
     uint8_t *sp;
@@ -184,8 +219,7 @@ void kernel_thread_exit() {
     }
 }
 
-void kernel_thread_resume(context_t *context, uint16_t sp) {
-    current->sp = sp;
+void kernel_thread_resume(context_t *context) {
     current = context;
     dispatch(&current->sp);
 }
@@ -195,16 +229,18 @@ void kernel_shutdown() {
     while (1);
 }
 
-void kernel_schedule(uint16_t sp) {
-    context_t *next = current->next ? current->next : ready_context_queue.head;
-    if (next != NULL) {
-        kernel_thread_resume(next, sp);
-    }
+context_t *kernel_schedule() {
+    return current->next ? current->next : ready_context_queue.head;
 }
+
 
 // bind interrupts
 void timer_intr(softvec_type_t type, uint16_t sp) {
-    kernel_schedule(sp);
+    current->sp = sp;
+    context_t *next = kernel_schedule();
+    if (next != NULL) {
+        kernel_thread_resume(next);
+    }
 }
 
 void syscall_intr(softvec_type_t type, uint16_t sp) {
@@ -238,6 +274,7 @@ void syscall_intr(softvec_type_t type, uint16_t sp) {
             break;
     }
 }
+
 
 void os_init() {
     INTR_DISABLE;
