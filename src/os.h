@@ -64,7 +64,11 @@ void free(void *ptr);
 
 void exit(int ret);
 
-thread_id_t thread_run(thread_func func, int priority, int stacksize, int argc, char *argv[]);
+
+// thread
+thread_id_t thread_run(thread_func func, int stacksize, int argc, char *argv[]);
+
+void thread_sleep();
 
 // kernel
 void kernel_shutdown();

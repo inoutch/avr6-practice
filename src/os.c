@@ -4,16 +4,15 @@
 #include "interrupt.h"
 
 #define THREAD_NUM 6
-#define PRIORITY_NUM 4
+
+#define WINDOW_SIZE 128
 
 typedef struct {
     struct context_t *next;
-    int priority;
     char *stack;
-    uint32_t flags;
 
-    thread_func func;
     struct {
+        thread_func func;
         int argc;
         char *argv;
     } init;
@@ -26,14 +25,16 @@ typedef struct {
     uint16_t sp;
 } context_t;
 
+static context_t *current;
+static context_t contexts[THREAD_NUM];
 static struct {
     context_t *head;
     context_t *tail;
-} ready_context_queue[PRIORITY_NUM];
+} ready_context_queue;
 
-static context_t main = {};
-static context_t *current = &main;
-static context_t contexts[THREAD_NUM];
+void kernel_queue_context();
+
+void dispatch(context_t *context);
 
 // user
 // memory
@@ -51,27 +52,25 @@ void free(void *ptr) {
 }
 
 // thread
+void thread_init() {
+    current = contexts;
+    ready_context_queue.head = ready_context_queue.tail = current;
+}
+
 void exit(int ret) {
     syscall_params_t params;
     params.un.exit.ret = ret;
     syscall(SYSCALL_TYPE_EXIT, &params);
 }
 
-thread_id_t thread_run(thread_func func, int priority, int stacksize, int argc, char *argv[]) {
+thread_id_t thread_run(thread_func func, int stacksize, int argc, char *argv[]) {
     syscall_params_t params;
     params.un.run.func = func;
-    params.un.run.priority = priority;
     params.un.run.stacksize = stacksize;
     params.un.run.argc = argc;
     params.un.run.argv = argv;
     syscall(SYSCALL_TYPE_RUN, &params);
     return params.un.run.id;
-}
-
-void wakeup(thread_id_t id) {
-    syscall_params_t params;
-    params.un.wakeup.id = id;
-    syscall(SYSCALL_TYPE_WAKEUP, &params);
 }
 
 void sleep(uint16_t milliseconds) {
@@ -80,45 +79,30 @@ void sleep(uint16_t milliseconds) {
     syscall(SYSCALL_TYPE_SLEEP, &params);
 }
 
+// kernel
 // thread
-void kernel_queue_context() {
-    if (current == NULL) {
+void kernel_queue_context(context_t *context) {
+    if (context == NULL) {
         return;
     }
-    if (ready_context_queue[current->priority].tail) {
-        ready_context_queue[current->priority].tail->next = current;
+    if (ready_context_queue.tail) {
+        ready_context_queue.tail->next = context;
     } else {
-        ready_context_queue[current->priority].head = current;
+        ready_context_queue.head = context;
     }
-    ready_context_queue[current->priority].tail = current;
-    // three
-    // priority
-    // 0 -> head: thread1 -> thread2 -> tail: thread3 <- append new thread
-    // ~ -> ...
-    // 3 -> ...
-}
-
-void kernel_dequeue_context() {
-    if (current == NULL) {
-        return;
-    }
-    ready_context_queue[current->priority].head = current->next;
-    if (ready_context_queue[current->priority].tail == NULL) {
-        ready_context_queue[current->priority].head = NULL;
-    }
-    current->next = NULL;
-}
-
-void kernel_thread_init(context_t *context) {
-    context->func(context->init.argc, context->init.argv);
-    kernel_thread_end();
+    ready_context_queue.tail = context;
 }
 
 void kernel_thread_end() {
-    exit(0);
+
 }
 
-thread_id_t kernel_thread_run(int priority, thread_func func, int argc, char *argv, int stacksize) {
+void kernel_thread_init(context_t *context) {
+    context->init.func(context->init.argc, context->init.argv);
+    kernel_thread_end();
+}
+
+thread_id_t kernel_thread_run(thread_func func, int argc, char *argv, int stacksize) {
     int i;
     context_t *context_ptr;
     uint8_t *sp;
@@ -126,9 +110,9 @@ thread_id_t kernel_thread_run(int priority, thread_func func, int argc, char *ar
     static char *thread_stack = &_userstack;
 
     // find unused thread
-    for (i = 0; i < THREAD_NUM; i++) {
+    for (i = 1; i < THREAD_NUM; i++) {
         context_ptr = &contexts[i];
-        if (!context_ptr->func) {
+        if (!context_ptr->init.func) {
             break;
         }
     }
@@ -139,16 +123,12 @@ thread_id_t kernel_thread_run(int priority, thread_func func, int argc, char *ar
 
     // create thread context
     memset(context_ptr, 0, sizeof(*context_ptr));
-
     context_ptr->next = NULL;
-    context_ptr->priority = priority;
-    context_ptr->flags = 0;
-
-    context_ptr->func = func;
+    context_ptr->init.func = func;
     context_ptr->init.argc = argc;
     context_ptr->init.argv = argv;
 
-    // allocation stack
+    // allocation stack manually
     memset(thread_stack, 0, stacksize);
     thread_stack += stacksize;
 
@@ -157,13 +137,16 @@ thread_id_t kernel_thread_run(int priority, thread_func func, int argc, char *ar
 
     sp = (uint8_t *) context_ptr->stack;
     // *(sp--) = is stack value
+    // push returning addr
     *(sp--) = (uint8_t) (((uint16_t) kernel_thread_end >> 0) & 0xff);
     *(sp--) = (uint8_t) (((uint16_t) kernel_thread_end >> 8) & 0xff);
+    *(sp--) = (uint8_t) 0x00;
 
     *(sp--) = (uint8_t) (((uint16_t) kernel_thread_init >> 0) & 0xff);
     *(sp--) = (uint8_t) (((uint16_t) kernel_thread_init >> 8) & 0xff);
+    *(sp--) = (uint8_t) 0x00;
     // thread stack
-    // --
+    // -~~~-
     // thread_init
     // thread_end
 
@@ -181,18 +164,16 @@ thread_id_t kernel_thread_run(int priority, thread_func func, int argc, char *ar
         *(sp--) = 0;
     }
 
-    // ?
-    *(sp--) = 0;
-    *(sp--) = 0;
+    //
+    *(sp--) = 0; // RAMPZ
+    *(sp--) = 0; // EIND
+    *(sp--) = 0; // SREG
 
     // set sp to context
     context_ptr->sp = (uint16_t) sp;
 
     // evacuation current context
-    kernel_queue_context();
-
-    // set new context
-    current = context_ptr;
+    kernel_queue_context(context_ptr);
 
     return (thread_id_t) current;
 }
@@ -203,13 +184,10 @@ void kernel_thread_exit() {
     }
 }
 
-void kernel_thread_wait() {
-}
-
-void kernel_thread_wakeup() {
-}
-
-void kernel_thread_sleep() {
+void kernel_thread_resume(context_t *context, uint16_t sp) {
+    current->sp = sp;
+    current = context;
+    dispatch(&current->sp);
 }
 
 void kernel_shutdown() {
@@ -217,8 +195,16 @@ void kernel_shutdown() {
     while (1);
 }
 
+void kernel_schedule(uint16_t sp) {
+    context_t *next = current->next ? current->next : ready_context_queue.head;
+    if (next != NULL) {
+        kernel_thread_resume(next, sp);
+    }
+}
+
 // bind interrupts
 void timer_intr(softvec_type_t type, uint16_t sp) {
+    kernel_schedule(sp);
 }
 
 void syscall_intr(softvec_type_t type, uint16_t sp) {
@@ -229,19 +215,18 @@ void syscall_intr(softvec_type_t type, uint16_t sp) {
         case SYSCALL_TYPE_RUN:
             kernel_thread_run(
                     current->syscall_info.params->un.run.func,
-                    current->syscall_info.params->un.run.priority,
                     current->syscall_info.params->un.run.stacksize,
                     current->syscall_info.params->un.run.argc,
                     current->syscall_info.params->un.run.argv);
             break;
         case SYSCALL_TYPE_SLEEP:
-            kernel_thread_sleep();
+            //kernel_thread_sleep(0);
             break;
         case SYSCALL_TYPE_WAIT:
-            kernel_thread_wait();
+            //kernel_thread_wait();
             break;
         case SYSCALL_TYPE_WAKEUP:
-            kernel_thread_wakeup();
+            //kernel_thread_wakeup();
             break;
         case SYSCALL_TYPE_MALLOC:
             current->syscall_info.params->un.malloc.ret = kernel_malloc(current->syscall_info.params->un.malloc.size);
@@ -270,6 +255,9 @@ void os_init() {
 
     // init timer interrupt
     timer_interrupt_init();
+
+    // init thread
+    thread_init();
 
     INTR_ENABLE;
 }

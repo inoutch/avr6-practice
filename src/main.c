@@ -42,17 +42,19 @@ void xbee_test() {
 }
 
 void execution(int args, char *argv[]) {
+    puts("hello!");
+    while (1);
 }
 
 int main(void) {
     os_init();
 
-    char *str = malloc(sizeof(char) * 20);
-    strcpy(str, "hogehoge\n");
-    puts(str);
-    free(str);
+//    char *str = malloc(sizeof(char) * 20);
+//    strcpy(str, "hogehoge\n");
+//    puts(str);
+//    free(str);
 
-    thread_run(execution, 0, 64, 0, NULL);
+    thread_run(execution, 64, 0, NULL);
 
     puts("done.\n");
     while (1);

@@ -54,7 +54,7 @@ intr_syscall:
 	out	    0x3e, r29; stack1 -> stack2
 
 	push	r22; stack: 0x3d
-	push	r23; stack: 0x3d | 0x3e
+	push	r23; stack: 0x3d | 0x3e   *r22,r23 is sp for interrupt argments
 
 	eor	    r1, r1
 
@@ -221,3 +221,55 @@ intr_timeint:
 	pop	r30
 	pop	r31
 	reti
+
+    .global dispatch
+    .type   dispatch,@function
+dispatch:
+    mov	    r30, r24	; 複製SP low
+	mov	    r31, r25	; 複製SP high
+	ld	    r24, Z		; 追加
+	ldd	    r25, Z+1	; 追加
+	out	    0x3d, r24 	; 第一引数l(SPのアドレスのlow)
+	out	    0x3e, r25	; 第一引数h(SPのアドレスのhigh)
+
+	pop	    r31		    ; 追加
+	out	    0x3f, r31	; 追加
+
+	pop     r21;stack1: r31 ~ r0 | 0x3b > 0x3c
+	pop     r20;stack1: r31 ~ r0 > 0x3b
+	out     0x3b, r20; RAMPZ
+	out     0x3c, r21; ENID
+
+	pop     r0
+	pop     r1
+	pop     r2
+	pop     r3
+	pop     r4
+	pop     r5
+	pop     r6
+	pop     r7
+	pop     r8
+	pop     r9
+	pop     r10
+	pop     r11
+	pop     r12
+	pop     r13
+	pop     r14
+	pop     r15
+	pop     r16
+	pop     r17
+	pop     r18
+	pop     r19
+	pop     r20
+	pop     r21
+	pop     r22
+	pop     r23
+	pop     r24
+	pop     r25
+	pop     r26
+	pop     r27
+	pop     r28
+	pop     r29
+	pop     r30
+	pop     r31
+	reti; // stackが変更されているため, 戻り場所が並列実行する場所になる
