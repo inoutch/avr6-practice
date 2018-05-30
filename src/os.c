@@ -164,11 +164,11 @@ thread_id_t kernel_thread_run(thread_func func, int stacksize, int argc, char *a
     context_ptr->init.argv = argv;
 
     // allocation stack manually
-    memset(thread_stack, 0, stacksize);
-    thread_stack += stacksize;
+    memset(thread_stack - stacksize, 0, stacksize);
 
     // set start ptr of stack
     context_ptr->stack = thread_stack;
+    thread_stack -= stacksize;
 
     sp = (uint8_t *) context_ptr->stack;
     // *(sp--) = is stack value
